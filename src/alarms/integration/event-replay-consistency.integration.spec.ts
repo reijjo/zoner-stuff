@@ -27,19 +27,23 @@ describe('Event replay consistency integration', () => {
 
     mongoModel = {
       startSession: jest.fn().mockResolvedValue(session),
-      insertMany: jest.fn().mockImplementation((events: SerializableEvent[]) => {
-        storedEvents.push(...events);
-        return Promise.resolve(undefined);
-      }),
-      find: jest.fn().mockImplementation(({ streamId }: { streamId: string }) => ({
-        sort: jest.fn().mockImplementation(() => {
-          const sorted = storedEvents
-            .filter((event) => event.streamId === streamId)
-            .sort((left, right) => left.position - right.position)
-            .map((event) => ({ toJSON: () => event }));
-          return Promise.resolve(sorted);
+      insertMany: jest
+        .fn()
+        .mockImplementation((events: SerializableEvent[]) => {
+          storedEvents.push(...events);
+          return Promise.resolve(undefined);
         }),
-      })),
+      find: jest
+        .fn()
+        .mockImplementation(({ streamId }: { streamId: string }) => ({
+          sort: jest.fn().mockImplementation(() => {
+            const sorted = storedEvents
+              .filter((event) => event.streamId === streamId)
+              .sort((left, right) => left.position - right.position)
+              .map((event) => ({ toJSON: () => event }));
+            return Promise.resolve(sorted);
+          }),
+        })),
     };
 
     const deserializer: EventDeserializer = {
@@ -91,10 +95,9 @@ describe('Event replay consistency integration', () => {
       items: [],
     });
 
-    const ackEvent = Object.assign(
-      new AlarmAcknowledgedEvent(aggregateId),
-      { acknowledgedAt },
-    );
+    const ackEvent = Object.assign(new AlarmAcknowledgedEvent(aggregateId), {
+      acknowledgedAt,
+    });
     await handler.handle(ackEvent);
 
     const history = await eventStore.getEventsByStreamId(aggregateId);
@@ -138,6 +141,8 @@ describe('Event replay consistency integration', () => {
     expect(projection.isAcknowledged).toBe(true);
     expect(projection.acknowledgedAt).toBeDefined();
     expect(projection.items).toHaveLength(1);
-    expect(projection.triggeredAt.toISOString()).toBe(triggeredAt.toISOString());
+    expect(projection.triggeredAt.toISOString()).toBe(
+      triggeredAt.toISOString(),
+    );
   });
 });

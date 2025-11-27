@@ -80,7 +80,11 @@ describe('Alarm sagas mesh', () => {
 
     expect(outputs).toHaveLength(0);
     const views = await repository.findAll();
-    expect(views.map((view) => view.isAcknowledged)).toEqual([true, true, true]);
+    expect(views.map((view) => view.isAcknowledged)).toEqual([
+      true,
+      true,
+      true,
+    ]);
   });
 
   it('partial ack leaves a single targeted escalation', async () => {

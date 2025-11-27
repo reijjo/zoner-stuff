@@ -63,7 +63,9 @@ describe('CascadingAlarmsSaga scenarios', () => {
 
     it('midstream signals shut it down', () => {
       ['b-1', 'b-2', 'b-3'].forEach((id) => {
-        events$.next(new AlarmCreatedEvent(buildAlarm(id, 'Drill Press') as any));
+        events$.next(
+          new AlarmCreatedEvent(buildAlarm(id, 'Drill Press') as any),
+        );
         events$.next(new AlarmAcknowledgedEvent(id));
       });
 
@@ -129,7 +131,11 @@ describe('CascadingAlarmsSaga scenarios', () => {
   });
 });
 
-function buildAlarm(id: string, name: string, isAcknowledged = false): AlarmLike {
+function buildAlarm(
+  id: string,
+  name: string,
+  isAcknowledged = false,
+): AlarmLike {
   return {
     id,
     name,

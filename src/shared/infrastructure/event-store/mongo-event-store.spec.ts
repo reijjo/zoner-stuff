@@ -29,10 +29,9 @@ describe('MongoEventStore.persist', () => {
       insertMany: jest.fn().mockResolvedValue(undefined),
     } as any;
 
-    const store = new MongoEventStore(
-      model,
-      { deserialize: jest.fn() } as unknown as EventDeserializer,
-    );
+    const store = new MongoEventStore(model, {
+      deserialize: jest.fn(),
+    } as unknown as EventDeserializer);
 
     const persistPromise = store.persist(event);
     let completed = false;

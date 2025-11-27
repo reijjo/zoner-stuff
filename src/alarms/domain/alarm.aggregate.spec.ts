@@ -61,7 +61,9 @@ describe('Alarm aggregate event sourcing guarantees', () => {
     alarm.loadFromHistory([createdEvent]);
 
     expect(() => alarm.acknowledge()).not.toThrow();
-    expect(() => alarm.acknowledge()).toThrow('Alarm has already been acknowledged');
+    expect(() => alarm.acknowledge()).toThrow(
+      'Alarm has already been acknowledged',
+    );
   });
 });
 

@@ -1,9 +1,9 @@
-Nversion: "3.8"
+version: '3.8'
 services:
   write-db:
     image: postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       POSTGRES_PASSWORD: postgres
   read-db:
@@ -14,7 +14,7 @@ services:
       - MONGODB_DATABASE="vf-read-db"
   event-store:
     image: mongo:6.0.4
-    ports: 
+    ports:
       - 27018:27017
     environment:
       - MONGODB_DATABASE="vf-event-store"

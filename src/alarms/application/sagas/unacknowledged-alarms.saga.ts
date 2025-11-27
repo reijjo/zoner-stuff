@@ -1,6 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Saga, ICommand, ofType } from '@nestjs/cqrs';
-import { EMPTY, Observable, filter, first, map, mergeMap, race, timer } from 'rxjs';
+import {
+  EMPTY,
+  Observable,
+  filter,
+  first,
+  map,
+  mergeMap,
+  race,
+  timer,
+} from 'rxjs';
 import { AlarmAcknowledgedEvent } from '../../domain/events/alarm-acknowledged.event';
 import { AlarmCreatedEvent } from '../../domain/events/alarm-created.event';
 import { NotifyFacilitySupervisorCommand } from '../commands/notify-facility-supervisor.command';

@@ -26,9 +26,9 @@ describe('MongoEventStore concurrency control', () => {
     let insertCount = 0;
 
     const model = {
-      startSession: jest.fn().mockImplementation(() =>
-        Promise.resolve(sessions[sessionIndex++]),
-      ),
+      startSession: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(sessions[sessionIndex++])),
       insertMany: jest.fn().mockImplementation(() => {
         insertCount += 1;
         if (insertCount === 2) {
@@ -66,14 +66,12 @@ describe('MongoEventStore concurrency control', () => {
     let commitResolver!: () => void;
     const session = {
       startTransaction: jest.fn(),
-      commitTransaction: jest
-        .fn()
-        .mockImplementation(
-          () =>
-            new Promise<void>((resolve) => {
-              commitResolver = resolve;
-            }),
-        ),
+      commitTransaction: jest.fn().mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            commitResolver = resolve;
+          }),
+      ),
       abortTransaction: jest.fn().mockResolvedValue(undefined),
       endSession: jest.fn().mockResolvedValue(undefined),
     };
@@ -82,19 +80,23 @@ describe('MongoEventStore concurrency control', () => {
     const pendingEvents: SerializableEvent[] = [];
     const model = {
       startSession: jest.fn().mockResolvedValue(session),
-      insertMany: jest.fn().mockImplementation((events: SerializableEvent[]) => {
-        pendingEvents.push(...events);
-        return Promise.resolve(undefined);
-      }),
-      find: jest.fn().mockImplementation(({ streamId }: { streamId: string }) => ({
-        sort: jest.fn().mockImplementation(() => {
-          const docs = storedEvents
-            .filter((event) => event.streamId === streamId)
-            .sort((a, b) => a.position - b.position)
-            .map((event) => ({ toJSON: () => event }));
-          return Promise.resolve(docs);
+      insertMany: jest
+        .fn()
+        .mockImplementation((events: SerializableEvent[]) => {
+          pendingEvents.push(...events);
+          return Promise.resolve(undefined);
         }),
-      })),
+      find: jest
+        .fn()
+        .mockImplementation(({ streamId }: { streamId: string }) => ({
+          sort: jest.fn().mockImplementation(() => {
+            const docs = storedEvents
+              .filter((event) => event.streamId === streamId)
+              .sort((a, b) => a.position - b.position)
+              .map((event) => ({ toJSON: () => event }));
+            return Promise.resolve(docs);
+          }),
+        })),
     } as any;
 
     const deserializer: EventDeserializer = {
