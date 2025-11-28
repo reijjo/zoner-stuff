@@ -14,7 +14,11 @@ export class VersionedAggregateRoot extends AggregateRoot {
   }
 
   public loadFromHistory(history: SerializableEvent[]): void {
-    const domainEvents = history.map((event) => event.data);
+    const domainEvents = history.map((event) => {
+      const instance = Object.create({ constructor: { name: event.type } });
+      return Object.assign(instance, event.data);
+    });
+
     super.loadFromHistory(domainEvents);
 
     const lastEvent = history[history.length - 1];

@@ -46,6 +46,7 @@ _AlarmsService › should be defined_
 
 I don't considere this as modifying the tests:
 
+- `src/alarms/application/alarms.service.spec.ts`
 - The test needs the CqrsModule
 
 ```ts
@@ -60,13 +61,16 @@ I don't considere this as modifying the tests:
 
 _AlarmsController › should be defined_
 
-This needs the same import as above.
+- `src/alarms/presenters/http/alarms.controller.spec.ts`
+  This needs the same import as above.
 
 ## src/shared/infrastructure/event-store/mongo-event-store-concurrency.spec.ts
 
 _MongoEventStore concurrency control › rejects concurrent writes to the same stream when a stale position is detected_
 
 The **UNIQUE_CONSTRAINT_ERROR** was only logged, you need also throw the error
+
+- `src/shared/infrastructure/event-store/mongo-event-store.ts`
 
 ```ts
 ...
@@ -86,8 +90,10 @@ The **UNIQUE_CONSTRAINT_ERROR** was only logged, you need also throw the error
 ## src/shared/infrastructure/event-store/mongo-event-store.spec.ts
 
 _MongoEventStore.persist › does not resolve until the Mongo commit promise settles_
+
 Like the test says we don't wait the promise to settle:
 
+- `src/shared/infrastructure/event-store/mongo-event-store.ts`
 - We need just add one `await` in the code:
 
 ```ts
@@ -105,3 +111,30 @@ Like the test says we don't wait the promise to settle:
 ## src/alarms/integration/event-replay-consistency.integration.spec.ts
 
 _Event replay consistency integration › rebuilds an aggregate from stored events that aligns with the projection state_
+
+The `onAlarmAcknowledgedEvent` handler method was never being called when loading events from history.
+
+- `src/shared/domain/aggregate-root.ts`
+- Before, `domainEvents` was just extracting the plain data objects:
+
+```ts
+const domainEvents = history.map((event) => event.data);
+```
+
+- This gave us plain objects without constructor names, so `@nestjs/cqrs` couldn't match them to handler methods like `onAlarmAcknowledgedEvent`.
+
+- Now we create objects with the correct constructor name from `event.type`:
+
+```ts
+const domainEvents = history.map((event) => {
+  const instance = Object.create({ constructor: { name: event.type } });
+  return Object.assign(instance, event.data);
+});
+```
+
+- This way `@nestjs/cqrs` can find the right handler method by checking `event.constructor.name`.
+
+- I have to admit that i needed some Claude.ai help for this one.
+
+test suites: 2failed 10passed
+tests 4failed 20passed
