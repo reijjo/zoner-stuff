@@ -66,9 +66,41 @@ This needs the same import as above.
 
 _MongoEventStore concurrency control › rejects concurrent writes to the same stream when a stale position is detected_
 
+The **UNIQUE_CONSTRAINT_ERROR** was only logged, you need also throw the error
+
+```ts
+...
+	const UNIQUE_CONSTRAINT_ERROR_CODE = 11000;
+      if (error?.code === UNIQUE_CONSTRAINT_ERROR_CODE) {
+        this.logger.error(
+          `Events could not be persisited. Aggregate is stale.`,
+        );
+        console.error(error.writeErrors?.[0]?.err?.errmsg);
+        throw new Error('Events could not be persisited. Aggregate is stale.'); // <-- This was missing
+      } else {
+        throw error;
+      }
+		...
+```
+
 ## src/shared/infrastructure/event-store/mongo-event-store.spec.ts
 
 _MongoEventStore.persist › does not resolve until the Mongo commit promise settles_
+Like the test says we don't wait the promise to settle:
+
+- We need just add one `await` in the code:
+
+```ts
+    const session = await this.eventStore.startSession();
+    try {
+      session.startTransaction();
+      await this.eventStore.insertMany(events, { session, ordered: true });
+
+      await session.commitTransaction();	// <-- This
+      this.logger.debug(`Events inserted successfully to the event store`);
+    } catch (error) {
+      await session.abortTransaction();
+```
 
 ## src/alarms/integration/event-replay-consistency.integration.spec.ts
 
