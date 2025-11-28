@@ -10,7 +10,6 @@ The repository and details are here: https://github.com/kottinov/test-ss
 
 # First things first
 
-- Run `cp .env.example .env`
 - `docker-compose.yml` file has an extra "N" on the version
 
 ```yml
@@ -24,55 +23,53 @@ services:
 Nversion -> version
 
 - Open docker
-- Run `make install`
 - Run `make setup`
 - Run `pnpm start:dev` to run the app
 
-## Bugs found & fixed
+# Bugs found & fixed
 
-### AlarmsService - should be defined
+## src/alarms/integration/alarm-sagas.interaction.spec.ts
 
-`src/alarms/application/alarms.service.spec.ts`
+_Alarm sagas mesh › storms acked before either window stay quiet_
 
-- The `CqrsModule` was missing from the `test/app.e2e-spec.ts` file:
+_Alarm sagas mesh › partial ack leaves a single targeted escalation_
+
+_Alarm sagas mesh › acknowledgements during buffer window prevent escalation_
+
+## src/alarms/application/sagas/cascading-alarms-projection.saga.spec.ts
+
+_CascadingAlarmsSaga scenarios › Escalation stream › midstream signals shut it down_
+
+## src/alarms/application/alarms.service.spec.ts
+
+_AlarmsService › should be defined_
+
+I don't considere this as modifying the tests:
+
+- The test needs the CqrsModule
 
 ```ts
-...
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, CqrsModule],
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [CqrsModule],	// <--this
+      providers: [AlarmsService],
     }).compile();
-...
 ```
 
-### Alarms sagas mesh
+## src/alarms/presenters/http/alarms.controller.spec.ts
 
-- `src/alarms/integration/alarm-sagas.interaction.spec.ts `
+_AlarmsController › should be defined_
 
-#### storms acked before either window stay quiet
+This needs the same import as above.
 
-#### partial ack leaves a single targeted escalation
+## src/shared/infrastructure/event-store/mongo-event-store-concurrency.spec.ts
 
-#### acknowledgements during buffer window prevent escalation
+_MongoEventStore concurrency control › rejects concurrent writes to the same stream when a stale position is detected_
 
-### CascadingAlarmsSaga scenarios
+## src/shared/infrastructure/event-store/mongo-event-store.spec.ts
 
-#### Escalation stream - midstream signals shut it down
+_MongoEventStore.persist › does not resolve until the Mongo commit promise settles_
 
-- `src/alarms/application/sagas/cascading-alarms-projection.saga.spec.ts `
+## src/alarms/integration/event-replay-consistency.integration.spec.ts
 
-### AlarmsController - should be defined
-
-### AlarmsService - should be defined
-
-### MongoEventStore concurrency control - rejects concurrent writes to the same stream when a stale postition is detected
-
-- `src/shared/infrastructure/event-store/mongo-event-store-concurrency.spec.ts`
-
-### Event replay consistency integration - rebuilds an aggregate from stored events that aligns with the projection state
-
-- `src/alarms/integration/event-replay-consistency.integration.spec.ts`
-
-### MongoEventStore.persist - does not resolve until the Mongo commit promise settles
-
-- `src/shared/infrastructure/event-store/mongo-event-store.spec.ts`
+_Event replay consistency integration › rebuilds an aggregate from stored events that aligns with the projection state_
