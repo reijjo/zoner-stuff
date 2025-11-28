@@ -30,6 +30,57 @@ Nversion -> version
 
 ## src/alarms/integration/alarm-sagas.interaction.spec.ts
 
+We can see in the testfile that `AlarmAcknowledgedEvent` is mocked with
+
+```ts
+ AlarmAcknowledgedEvent: class AlarmAcknowledgedEventStub {
+    constructor(
+      public readonly alarmId: string,
+      public readonly acknowledgedAt?: Date,
+    ) {}
+```
+
+So we need to make some changes to the `src/alarms/domain/alarm.ts` file:
+
+```ts
+export class Alarm extends VersionedAggregateRoot {
+  public name: string;
+  public severity: AlarmSeverity;
+  public triggeredAt: Date;
+  public isAcknowledged = false;
+  public acknowledgedAt?: Date;	// <-- We add this
+  public items = new Array<AlarmItem>();
+
+ ...
+
+  [`on${AlarmAcknowledgedEvent.name}`](
+    event: SerializedEventPayload<AlarmAcknowledgedEvent>,
+  ) {
+    if (this.isAcknowledged == true) {
+      throw new Error('Alarm has already been acknowledged');
+    }
+    this.isAcknowledged = true;
+    this.acknowledgedAt = new Date(event.acknowledgedAt);	// <-- And this
+  }
+}
+```
+
+And also some changes to `src/alarms/domain/events/alarm-acknowledged.event.ts` file:
+
+```ts
+import { AutowiredEvent } from 'src/shared/decorators/autowired-event.decorator';
+
+@AutowiredEvent
+export class AlarmAcknowledgedEvent {
+  constructor(
+    public readonly alarmId: string,
+    public readonly acknowledgedAt: string = new Date().toISOString(), // <-- Add this
+  ) {}
+}
+```
+
+- `toISOString()` because we want to keep the **handle** in `src/alarms/application/event-handlers/alarm-acknowledged.event-handler.ts`file happy.
+
 _Alarm sagas mesh › storms acked before either window stay quiet_
 
 _Alarm sagas mesh › partial ack leaves a single targeted escalation_
@@ -176,5 +227,5 @@ const domainEvents = history.map((event) => {
 
 - I have to admit that i needed some Claude.ai help for this one.
 
-test suites: 2failed 10passed
-tests 4failed 20passed
+test suites: 1failed 11passed
+tests 3failed 21passed

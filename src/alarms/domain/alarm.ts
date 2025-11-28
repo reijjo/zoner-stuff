@@ -10,6 +10,7 @@ export class Alarm extends VersionedAggregateRoot {
   public severity: AlarmSeverity;
   public triggeredAt: Date;
   public isAcknowledged = false;
+  public acknowledgedAt?: Date;
   public items = new Array<AlarmItem>();
 
   constructor(public id: string) {
@@ -43,5 +44,6 @@ export class Alarm extends VersionedAggregateRoot {
       throw new Error('Alarm has already been acknowledged');
     }
     this.isAcknowledged = true;
+    this.acknowledgedAt = new Date(event.acknowledgedAt);
   }
 }
