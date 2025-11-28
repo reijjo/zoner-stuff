@@ -40,6 +40,46 @@ _Alarm sagas mesh › acknowledgements during buffer window prevent escalation_
 
 _CascadingAlarmsSaga scenarios › Escalation stream › midstream signals shut it down_
 
+The `AlarmAcknowledgedEvent` wasn’t used at all, so the saga only looked at `AlarmCreatedEvent` and the `isAcknowledged` flag at creation time. That meant that even if an alarm was acknowledged right after it was created, the saga still thought it was “active” and could escalate it.
+
+- `src/alarms/application/sagas/cascading-alarms.saga.ts`
+- I added a Set to track which alarm IDs have been acknowledged.
+- The saga now listens to AlarmAcknowledgedEvent and stores those IDs in the set.
+- When the 5 second window closes, the saga ignores alarms that have been acknowledged and only escalates if there are 3 or more still not acknowledged.
+
+```ts
+export class CascadingAlarmsSaga {
+  private readonly logger = new Logger(CascadingAlarmsSaga.name);
+  private acknowledgedIds = new Set<string>();	// <-- Here is the set for the ids
+
+  @Saga()
+  start = (events$: Observable<any>): Observable<ICommand> => {
+		// Listen for AlarmAcknowledgedEvent and store the ids
+    events$.pipe(ofType(AlarmAcknowledgedEvent)).subscribe((event) => {
+      this.acknowledgedIds.add(event.alarmId);
+    });
+
+    return events$.pipe(
+      ofType(AlarmCreatedEvent),
+      groupBy((event) => event.alarm.name),
+      mergeMap((groupedEvents$) =>
+        groupedEvents$.pipe(
+          shareReplay({ bufferSize: 1, refCount: true }),
+          bufferTime(5000, null, 3),
+        ),
+      ),
+      filter((events) => {
+				// Only count alarms that are still not acknowledged
+        const active = events.filter(
+          (event) =>
+            !event.alarm.isAcknowledged &&
+            !this.acknowledgedIds.has(event.alarm.id),
+        );
+        return active.length >= 3;
+      }),
+		...
+```
+
 ## src/alarms/application/alarms.service.spec.ts
 
 _AlarmsService › should be defined_

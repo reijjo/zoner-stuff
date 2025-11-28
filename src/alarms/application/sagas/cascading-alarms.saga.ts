@@ -16,9 +16,14 @@ import { NotifyFacilitySupervisorCommand } from '../commands/notify-facility-sup
 @Injectable()
 export class CascadingAlarmsSaga {
   private readonly logger = new Logger(CascadingAlarmsSaga.name);
+  private acknowledgedIds = new Set<string>();
 
   @Saga()
   start = (events$: Observable<any>): Observable<ICommand> => {
+    events$.pipe(ofType(AlarmAcknowledgedEvent)).subscribe((event) => {
+      this.acknowledgedIds.add(event.alarmId);
+    });
+
     return events$.pipe(
       ofType(AlarmCreatedEvent),
       groupBy((event) => event.alarm.name),
@@ -29,7 +34,11 @@ export class CascadingAlarmsSaga {
         ),
       ),
       filter((events) => {
-        const active = events.filter((event) => !event.alarm.isAcknowledged);
+        const active = events.filter(
+          (event) =>
+            !event.alarm.isAcknowledged &&
+            !this.acknowledgedIds.has(event.alarm.id),
+        );
         return active.length >= 3;
       }),
       map((events) => {
