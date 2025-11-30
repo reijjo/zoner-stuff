@@ -30,7 +30,7 @@ export class CascadingAlarmsSaga {
       mergeMap((groupedEvents$) =>
         groupedEvents$.pipe(
           shareReplay({ bufferSize: 1, refCount: true }),
-          bufferTime(5000, null, 3),
+          bufferTime(5000),
         ),
       ),
       filter((events) => {
@@ -39,6 +39,7 @@ export class CascadingAlarmsSaga {
             !event.alarm.isAcknowledged &&
             !this.acknowledgedIds.has(event.alarm.id),
         );
+
         return active.length >= 3;
       }),
       map((events) => {

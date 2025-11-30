@@ -1,13 +1,5 @@
 # zoner-stuff
 
-You'll be working with an event-sourced alarm system where several test suites are failing. The tests encode real production bugs we've encountered, and your job is to fix the underlying issues without modifying or deleting the tests themselves. The system uses CQRS and event sourcing, so you'll need to trace how events flow through aggregates, sagas, and projections to find the root causes.
-
-The repository includes a Makefile for common commands. Run make install to set up and make test to see what's failing. Don't modify the tests or remove production code like timeouts or event handlers unless you can clearly justify why. If you get stuck, try diagramming the data flow for one failing test at a time.
-
-Once you're done, commit your changes and write a brief summary covering the bugs you found, your reasoning for each fix, and any trade-offs you made. Push to a GitHub repository and send us the link.
-
-The repository and details are here: https://github.com/kottinov/test-ss
-
 # First things first
 
 - `docker-compose.yml` file has an extra "N" on the version
@@ -81,11 +73,38 @@ export class AlarmAcknowledgedEvent {
 
 - `toISOString()` because we want to keep the **handle** in `src/alarms/application/event-handlers/alarm-acknowledged.event-handler.ts`file happy.
 
+## src/alarms/integration/alarm-sagas.interaction.spec.ts
+
 _Alarm sagas mesh › storms acked before either window stay quiet_
+We modify the `bufferTime` in the events pipe
+
+- `src/alarms/application/sagas/cascading-alarms.saga.ts`
+
+```ts
+...
+return events$.pipe(
+      ofType(AlarmCreatedEvent),
+      groupBy((event) => event.alarm.name),
+      mergeMap((groupedEvents$) =>
+        groupedEvents$.pipe(
+          shareReplay({ bufferSize: 1, refCount: true }),
+          // bufferTime(5000, null, 3), <-- What we had
+          bufferTime(5000), 	// <-- What we have now
+        ),
+      ),
+...
+```
+
+- Removing the **maxBufferSize** restored the intended behavior.
+- So instead of collecting all alarms that fire inside the 5-second window, it only collected the first three and flushed too early. The tests expect the system to wait 5 full seconds, not to flush early.
 
 _Alarm sagas mesh › partial ack leaves a single targeted escalation_
 
+- The solution above fixes this too.
+
 _Alarm sagas mesh › acknowledgements during buffer window prevent escalation_
+
+- Too hard for me and my AI friend.
 
 ## src/alarms/application/sagas/cascading-alarms-projection.saga.spec.ts
 

@@ -65,7 +65,7 @@ describe('Alarm sagas mesh', () => {
     jest.useRealTimers();
   });
 
-  it.only('storms acked before either window stay quiet', async () => {
+  it('storms acked before either window stay quiet', async () => {
     await raiseCreate('storm-1');
     await raiseCreate('storm-2');
     await raiseCreate('storm-3');
